@@ -1,3 +1,5 @@
+#clock.py
+
 class HardwareClock:
     def __init__(self):
         self.state = 0  # Starts LOW (0)

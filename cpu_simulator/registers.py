@@ -1,3 +1,4 @@
+#registers.py
 class FourBitRegister:
     def __init__(self, name="Register"):
         self.name = name
