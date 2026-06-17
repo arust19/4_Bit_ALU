@@ -1,1 +1,4 @@
-Record=TopLevelDocument|FileName=alu_schem_1.SchDoc|SheetNumber=1
+Record=TopLevelDocument|FileName=alu_mux_schem.SchDoc|SheetNumber=3
+Record=NoMainPathDocument|SourceDocument=alu_mux_schem.SchDoc|FileName=alu_raspberrypi_micro.SchDoc|SheetNumber=4
+Record=NoMainPathDocument|SourceDocument=alu_mux_schem.SchDoc|FileName=alu_schem_1.SchDoc|SheetNumber=1
+Record=NoMainPathDocument|SourceDocument=alu_mux_schem.SchDoc|FileName=alu_schem_2.SchDoc|SheetNumber=2
