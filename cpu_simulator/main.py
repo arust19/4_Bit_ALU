@@ -1,38 +1,40 @@
 import config
 from clock import HardwareClock
 from alu import simulate_alu
-
-def simulate_pi_gpio_outputs(instruction_word):
-    """
-    Simulates sending a 10-bit instruction out over the Raspberry Pi GPIO pins.
-    """
-    # Enforce a 10-bit limit (values 0 to 1023)
-    sanitized_instruction = instruction_word & 0x3FF
-    
-    # Convert to a 10-character wide binary string (e.g., 25 -> "0000011001")
-    binary_string = f"{sanitized_instruction:010b}"
-    
-    print("\n--- Physical GPIO Signal Map ---")
-    # Loop through each bit and see which pin it maps to
-    for index, bit_char in enumerate(binary_string):
-        pin_number = config.INSTRUCTION_BUS_PINS[index]
-        bit_value = int(bit_char)
-        print(f"  [GPIO {pin_number:02d}] driving line Bit {9 - index} -> {'HIGH (1)' if bit_value else 'LOW (0)'}")
-
+from registers import FourBitRegister
+from contriol_unit import ControlUnit
 
 if __name__ == "__main__":
-    # Create our simulation components
+    # 1. Initialize all pieces of our system
     cpu_clock = HardwareClock()
+    control_unit = ControlUnit()
+    register_a = FourBitRegister("Register A")
+    register_b = FourBitRegister("Register B")
     
-    # Example: An instruction opcode you want to send out (e.g., 0b1011001101 = 717)
-    test_instruction = 717 
+    # Preset starting data
+    register_a.value = 5
+    register_b.value = 3
     
-    # 1. Visualize how the 10-bit bus splits across your physical pins
-    simulate_pi_gpio_outputs(test_instruction)
+    # 2. Fetch an instruction (e.g., ADD and store in Reg A)
+    instruction = 0b00_00_00_1_0_00 
     
-    # 2. Simulate a clock cycle pulsing
-    old_clock_state = cpu_clock.state
-    new_clock_state = cpu_clock.toggle()
+    # 3. Let the control unit decode the instruction into a control bus
+    control_bus = control_unit.decode(instruction)
+    control_unit.print_signal_status(control_bus)
     
-    if cpu_clock.is_rising_edge(old_clock_state):
-        print(f"\n[Clock Edge] Rising edge detected ({old_clock_state} -> {new_clock_state}). Hardware registers latching data!")
+    # 4. Feed the control lines directly into the ALU and Registers
+    # Combinational math happens immediately:
+    alu_out, flags = simulate_alu(
+        opcode=control_bus["ALU_OPCODE"], 
+        val_a=register_a.read(), 
+        val_b=register_b.read()
+    )
+    
+    # 5. Pulse the clock to trigger the sequential elements (the registers)
+    clock_state = cpu_clock.toggle() # Goes HIGH
+    
+    # The registers look directly at the control lines coming out of the Control Unit
+    register_a.tick(alu_out, load_enable=control_bus["LOAD_REG_A"], clock_signal=clock_state)
+    register_b.tick(alu_out, load_enable=control_bus["LOAD_REG_B"], clock_signal=clock_state)
+    
+    cpu_clock.toggle() # Reset clock to LOW
